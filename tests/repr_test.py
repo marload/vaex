@@ -92,3 +92,39 @@ def test_repr_from_pandas():
     str_value = str(ds)
     assert 'NaT' in repr_value
     assert 'NaT' in str_value
+
+
+def test_repr_repeated_dropna_slicing():
+    x = pd.Series(['john', None, 'sally', None, 'Maria', 'Tim', 'Sarah', None], dtype='string')
+    y = pd.Series([1, 2, 3, 4, None, 6, 7, None], dtype='Int16')
+    z = pd.Series([10, 20, 30, 40, 50, 60, 70, 80])
+
+    pandas_df = pd.DataFrame(dict(x=x, y=y, z=z))
+    df = vaex.from_pandas(pandas_df)
+
+    # Initial dropna
+    df = df.dropna(['y'])
+
+    # Tricky part - you need to slice to trigger the bug, even in df!
+    # Otherwise it does not show
+    df_train = df[:5]
+    df_test = df[5:]
+
+    # Repeated dropna
+    df = df.dropna(['x'])
+
+    # Assertions
+    df_repr_value = repr(df)
+    df_str_value = str(df)
+    assert '--' not in df_repr_value
+    assert '--' not in df_str_value
+
+    df_train_repr_value = repr(df_train)
+    df_train_str_value = str(df_train)
+    assert '--' not in df_train_repr_value
+    assert '--' not in df_train_str_value
+
+    df_test_repr_value = repr(df_test)
+    df_test_str_value = str(df_test)
+    assert '--' not in df_test_repr_value
+    assert '--' not in df_test_str_value
